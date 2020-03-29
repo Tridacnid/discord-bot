@@ -12,7 +12,7 @@ def load_json(token):
 
 
 client = commands.Bot(command_prefix=load_json('prefix'))
-status = cycle(['memeposting', 'Animal Crossing', 'napping', 'Overwatch', 'Bridge', 'DOOM: Eternal'])
+status = cycle(load_json('statuses'))
 
 
 @client.event
@@ -35,7 +35,7 @@ async def on_message(message):
     await client.process_commands(message)
 
 
-@client.command(aliases=['Discover', 'pick', 'd'])
+@client.command(aliases=['Discover', 'pick', 'd', 'p'])
 async def discover(ctx):
     try:
         await ctx.send(random.choice(images))
@@ -97,7 +97,7 @@ async def _8ball(ctx, *, question):
     await ctx.send(f'Question: {question}\nAnswer: {random.choice(responses)}')
 
 
-@tasks.loop(minutes=61)
+@tasks.loop(minutes=random.randint(load_json('min_time'), load_json('max_time')))
 async def change_status():
     await client.change_presence(activity=discord.Game(next(status)))
 
