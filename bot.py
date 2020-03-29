@@ -6,7 +6,7 @@ from itertools import cycle
 
 
 def load_json(token):
-    with open("./config.json") as f:
+    with open('./config.json') as f:
         config = json.load(f)
     return config.get(token)
 
@@ -21,7 +21,30 @@ async def on_ready():
     print('Bot is ready')
 
 
-@client.command(aliases=['Roll', 'ROLL', 'dice', 'Dice', 'r', 'R'])
+images = []
+
+
+@client.event
+async def on_message(message):
+    if message.author.id != load_json('bot_id'):
+        try:
+            images.append(message.attachments[0].url)
+        except IndexError:
+            pass
+
+    await client.process_commands(message)
+
+
+@client.command(aliases=['Discover', 'pick', 'd'])
+async def discover(ctx):
+    try:
+        await ctx.send(random.choice(images))
+        print(len(images))
+    except IndexError:
+        pass
+
+
+@client.command(aliases=['Roll', 'dice', 'Dice', 'r', 'R'])
 async def roll(ctx, user_roll):
     user_roll = user_roll.split('d')
 
