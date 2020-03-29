@@ -39,7 +39,6 @@ async def on_message(message):
 async def discover(ctx):
     try:
         await ctx.send(random.choice(images))
-        print(len(images))
     except IndexError:
         pass
 
