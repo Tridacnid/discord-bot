@@ -12,7 +12,7 @@ def load_json(token):
 
 
 client = commands.Bot(command_prefix=load_json('prefix'))
-status = cycle(['memeposting', 'Animal Crossing', 'napping', 'Overwatch', 'Bridge'])
+status = cycle(['memeposting', 'Animal Crossing', 'napping', 'Overwatch', 'Bridge', 'DOOM: Eternal'])
 
 
 @client.event
