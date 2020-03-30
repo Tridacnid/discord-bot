@@ -3,6 +3,7 @@ import random
 import json
 from discord.ext import commands, tasks
 from itertools import cycle
+from pymongo import MongoClient
 
 
 def load_json(token):
@@ -11,8 +12,11 @@ def load_json(token):
     return config.get(token)
 
 
+cluster = MongoClient(load_json('db_address'))
+db = cluster['Discord']
+collection = db['images']
+
 client = commands.Bot(command_prefix=load_json('prefix'))
-status = cycle(load_json('statuses'))
 
 
 @client.event
@@ -21,26 +25,28 @@ async def on_ready():
     print('Bot is ready')
 
 
-images = []
-
-
 @client.event
 async def on_message(message):
     if message.author.id != load_json('bot_id'):
         try:
-            images.append(message.attachments[0].url)
+            post = {"url": message.attachments[0].url}
+            collection.insert_one(post)
         except IndexError:
             pass
 
     await client.process_commands(message)
 
 
+# Randomly posts an image that has been posted before
 @client.command(aliases=['Discover', 'pick', 'd', 'p'])
-async def discover(ctx):
-    try:
-        await ctx.send(random.choice(images))
-    except IndexError:
-        pass
+async def discover(ctx, num=1):
+    # Discover up to 3 images
+    if num > 3:
+        num = 3
+
+    images = collection.aggregate([{"$sample": {"size": num}}])
+    for image in images:
+        await ctx.send(image['url'])
 
 
 @client.command(aliases=['Roll', 'dice', 'Dice', 'r', 'R'])
@@ -74,27 +80,11 @@ async def roll(ctx, user_roll):
 
 @client.command(aliases=['8ball', '8Ball'])
 async def _8ball(ctx, *, question):
-    responses = ['As I see it, yes.',
-                 'Ask again later.',
-                 'Better not tell you now.',
-                 'Cannot predict now.',
-                 'Concentrate and ask again.',
-                 'Don’t count on it.',
-                 'It is certain.',
-                 'It is decidedly so.',
-                 'Most likely.',
-                 'My reply is no.',
-                 'My sources say no.',
-                 'Outlook not so good.',
-                 'Outlook good.',
-                 'Reply hazy, try again.',
-                 'Signs point to yes.',
-                 'Very doubtful.',
-                 'Without a doubt.',
-                 'Yes.',
-                 'Yes – definitely.',
-                 'You may rely on it.']
+    responses = load_json('8ball_responses')
     await ctx.send(f'Question: {question}\nAnswer: {random.choice(responses)}')
+
+
+status = cycle(load_json('statuses'))
 
 
 @tasks.loop(minutes=random.randint(load_json('min_time'), load_json('max_time')))
