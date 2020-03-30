@@ -28,9 +28,14 @@ async def on_ready():
 async def on_message(message):
     if message.author.id != load_json('bot_id'):
         try:
-            collection = db[str(message.channel.id)]
-            post = {"url": message.attachments[0].url}
-            collection.insert_one(post)
+            image = message.attachments[0].url
+            suffix_list = ['jpg', 'jpeg', 'png', 'gif']
+            if image.casefold().endswith(tuple(suffix_list)):
+                collection = db[str(message.channel.id)]
+                post = {"url": image}
+                collection.insert_one(post)
+            else:
+                pass
         except IndexError:
             pass
 
