@@ -25,6 +25,7 @@ async def on_ready():
     print('Bot is ready')
 
 
+# todo check for duplicates
 @client.event
 async def on_message(message):
     if message.author.id != load_json('bot_id'):
@@ -47,6 +48,17 @@ async def discover(ctx, num=1):
     images = collection.aggregate([{"$sample": {"size": num}}])
     for image in images:
         await ctx.send(image['url'])
+
+
+@client.command(aliases=['Remove', 'Delete', 'delete', 'del'])
+async def remove(ctx, url):
+    result = collection.delete_one({"url": url})
+    if result.deleted_count == 1:
+        await ctx.send("Image removed")
+    elif result.deleted_count == 0:
+        await ctx.send("Failed to remove image")
+    else:
+        await ctx.send("Something bad happened")
 
 
 @client.command(aliases=['Roll', 'dice', 'Dice', 'r', 'R'])
