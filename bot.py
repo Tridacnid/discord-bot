@@ -87,7 +87,7 @@ async def _8ball(ctx, *, question):
 status = cycle(load_json('statuses'))
 
 
-@tasks.loop(minutes=random.randint(load_json('min_time'), load_json('max_time')))
+@tasks.loop(minutes=load_json('loop_time'))
 async def change_status():
     await client.change_presence(activity=discord.Game(next(status)))
 
