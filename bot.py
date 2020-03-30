@@ -14,7 +14,6 @@ def load_json(token):
 
 cluster = MongoClient(load_json('db_address'))
 db = cluster['Discord']
-collection = db['images']
 
 client = commands.Bot(command_prefix=load_json('prefix'))
 
@@ -25,11 +24,11 @@ async def on_ready():
     print('Bot is ready')
 
 
-# todo check for duplicates
 @client.event
 async def on_message(message):
     if message.author.id != load_json('bot_id'):
         try:
+            collection = db[str(message.channel.id)]
             post = {"url": message.attachments[0].url}
             collection.insert_one(post)
         except IndexError:
@@ -44,14 +43,15 @@ async def discover(ctx, num=1):
     # Discover up to 3 images
     if num > 3:
         num = 3
-
+    collection = db[str(ctx.channel.id)]
     images = collection.aggregate([{"$sample": {"size": num}}])
     for image in images:
         await ctx.send(image['url'])
 
 
-@client.command(aliases=['Remove', 'Delete', 'delete', 'del'])
+@client.command(aliases=['Remove', 'Delete', 'delete', 'del', 'rm'])
 async def remove(ctx, url):
+    collection = db[str(ctx.channel.id)]
     result = collection.delete_one({"url": url})
     if result.deleted_count == 1:
         await ctx.send("Image removed")
