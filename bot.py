@@ -20,7 +20,7 @@ client = commands.Bot(command_prefix=load_json('prefix'))
 
 @client.event
 async def on_ready():
-    change_status.start()
+    # change_status.start()
     print('Bot is ready')
 
 
@@ -92,13 +92,13 @@ async def roll(ctx, user_roll):
         rolls.append(rolled)
         total += rolled
 
-    await ctx.send(f'You rolled: {rolls} for **{total}**')
+    await ctx.send(f'{ctx.author.display_name} rolled: {rolls} for **{total}**')
 
 
 @client.command(aliases=['8ball', '8Ball'])
 async def _8ball(ctx, *, question):
     responses = load_json('8ball_responses')
-    await ctx.send(f'Question: {question}\nAnswer: {random.choice(responses)}')
+    await ctx.send(f' {ctx.author.display_name}\'s question: {question}\nAnswer: {random.choice(responses)}')
 
 
 status = cycle(load_json('statuses'))
