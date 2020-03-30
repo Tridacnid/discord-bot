@@ -54,6 +54,16 @@ async def discover(ctx, num=1):
         await ctx.send(image['url'])
 
 
+@client.command()
+async def stats(ctx):
+    collection_str = str(db[str(ctx.channel.id)].name)
+    dbstats = db.command("collstats", collection_str)
+    data_size = dbstats['size'] / 1024
+    count = dbstats['count']
+    storage_size = dbstats['storageSize'] / 1024
+    await ctx.send(f'Images: {count}\nData Size: {data_size} KB\nStorage Size: {storage_size} KB')
+
+
 @client.command(aliases=['Remove', 'Delete', 'delete', 'del', 'rm'])
 async def remove(ctx, url):
     collection = db[str(ctx.channel.id)]
