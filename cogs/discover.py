@@ -41,8 +41,10 @@ class Discover(commands.Cog):
     # Randomly posts an image that has been posted before
     @commands.command(aliases=['Discover', 'pick', 'd', 'p'])
     async def discover(self, ctx, num=1):
-        # Discover up to 3 images
-        if num > 3:
+        """Discover up to 3 images"""
+        if num < 1:
+            num = 1
+        elif num > 3:
             num = 3
         collection = db[str(ctx.channel.id)]
         images = collection.aggregate([{"$sample": {"size": num}}])
@@ -51,6 +53,7 @@ class Discover(commands.Cog):
 
     @commands.command(aliases=['Remove', 'Delete', 'delete', 'del', 'rm'])
     async def remove(self, ctx, url):
+        """remove the URL of an image: !rm <url>"""
         collection = db[str(ctx.channel.id)]
         result = collection.delete_one({"url": url})
         if result.deleted_count == 1:
@@ -62,6 +65,7 @@ class Discover(commands.Cog):
 
     @commands.command()
     async def posted(self, ctx, url):
+        """See who originally posted an image: !posted <url>"""
         collection = db[str(ctx.channel.id)]
         op = collection.find_one({"url": url})
         try:
@@ -70,8 +74,11 @@ class Discover(commands.Cog):
         except:
             await ctx.send('I\'m not sure who posted that.')
 
+    # todo get stats of single user
+
     @commands.command()
     async def stats(self, ctx):
+        """See how many images are in the database"""
         collection_str = str(db[str(ctx.channel.id)].name)
         dbstats = db.command('collstats', collection_str)
         data_size = dbstats['size'] / 1024

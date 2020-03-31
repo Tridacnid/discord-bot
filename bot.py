@@ -26,17 +26,18 @@ async def on_ready():
 
 @client.command(aliases=['Roll', 'dice', 'Dice', 'r', 'R'])
 async def roll(ctx, user_roll):
+    """Roll some dice!"""
     user_roll = user_roll.split('d')
 
     if len(user_roll) != 2:
-        await ctx.send('check your dice')
+        await ctx.send('usage: XdY where X is the number of dice and Y is the number of sides')
         return
 
     try:
         dice = int(user_roll[0])
         sides = int(user_roll[1])
     except ValueError:
-        await ctx.send('check your dice')
+        await ctx.send('usage: XdY where X is the number of dice and Y is the number of sides')
         return
 
     if sides < 1 or sides > 10000 or dice > 100 or dice < 1:
@@ -53,8 +54,9 @@ async def roll(ctx, user_roll):
     await ctx.send(f'{ctx.author.display_name} rolled: {rolls} for **{total}**')
 
 
-@client.command(aliases=['8ball', '8Ball'])
+@client.command(name='8ball', aliases=['8Ball', '8-Ball', '8-ball'])
 async def _8ball(ctx, *, question):
+    """Ask the Magic 8-Ball a question!"""
     responses = load_json('8ball_responses')
     await ctx.send(f' {ctx.author.display_name}\'s question: {question}\nAnswer: {random.choice(responses)}')
 
@@ -70,9 +72,14 @@ async def change_status():
 @client.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send('Please pass in all required arguments.')
+        return await ctx.send('Please pass in all required arguments.')
     if isinstance(error, commands.CommandNotFound):
-        await ctx.send('Invalid Command')
+        return await ctx.send('Invalid Command')
+    if isinstance(error, commands.BadArgument):
+        if ctx.command.qualified_name == 'discover':
+            return await ctx.send('Argument must be a digit.')
+        else:
+            return await ctx.send('Try again')
 
 
 client.run(load_json('token'))
