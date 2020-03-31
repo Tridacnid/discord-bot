@@ -31,7 +31,7 @@ class Discover(commands.Cog):
                 suffix_list = ['jpg', 'jpeg', 'png', 'gif']
                 if image.casefold().endswith(tuple(suffix_list)):
                     collection = db[str(message.channel.id)]
-                    post = {"url": image}
+                    post = {"url": image, "op": message.author.id}
                     collection.insert_one(post)
                 else:
                     pass
@@ -59,6 +59,16 @@ class Discover(commands.Cog):
             await ctx.send("Failed to remove image")
         else:
             await ctx.send("Something bad happened")
+
+    @commands.command()
+    async def posted(self, ctx, url):
+        collection = db[str(ctx.channel.id)]
+        op = collection.find_one({"url": url})
+        try:
+            user = self.client.get_user(op['op'])
+            await ctx.send(f'That was originally posted by: {user.display_name}')
+        except:
+            await ctx.send('I\'m not sure who posted that.')
 
 
 def setup(client):
