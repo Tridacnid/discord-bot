@@ -89,4 +89,4 @@ async def on_command_error(ctx, error):
         await ctx.send('Invalid Command')
 
 
-client.run(load_json('test_token'))
+client.run(load_json('token'))
