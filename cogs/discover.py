@@ -70,6 +70,15 @@ class Discover(commands.Cog):
         except:
             await ctx.send('I\'m not sure who posted that.')
 
+    @commands.command()
+    async def stats(self, ctx):
+        collection_str = str(db[str(ctx.channel.id)].name)
+        dbstats = db.command('collstats', collection_str)
+        data_size = dbstats['size'] / 1024
+        count = dbstats['count']
+        storage_size = dbstats['storageSize'] / 1024
+        await ctx.send(f'Images: {count}\nData Size: {data_size} KB\nStorage Size: {storage_size} KB')
+
 
 def setup(client):
     client.add_cog(Discover(client))

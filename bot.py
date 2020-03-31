@@ -4,7 +4,6 @@ import json
 import os
 from discord.ext import commands, tasks
 from itertools import cycle
-from pymongo import MongoClient
 
 
 def load_json(token):
@@ -12,9 +11,6 @@ def load_json(token):
         config = json.load(f)
     return config.get(token)
 
-
-cluster = MongoClient(load_json('db_address'))
-db = cluster['Discord']
 
 client = commands.Bot(command_prefix=load_json('prefix'))
 for filename in os.listdir('./cogs'):
@@ -26,16 +22,6 @@ for filename in os.listdir('./cogs'):
 async def on_ready():
     # change_status.start()
     print('Bot is ready')
-
-
-@client.command()
-async def stats(ctx):
-    collection_str = str(db[str(ctx.channel.id)].name)
-    dbstats = db.command("collstats", collection_str)
-    data_size = dbstats['size'] / 1024
-    count = dbstats['count']
-    storage_size = dbstats['storageSize'] / 1024
-    await ctx.send(f'Images: {count}\nData Size: {data_size} KB\nStorage Size: {storage_size} KB')
 
 
 @client.command(aliases=['Roll', 'dice', 'Dice', 'r', 'R'])
