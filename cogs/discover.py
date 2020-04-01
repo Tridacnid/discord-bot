@@ -30,8 +30,8 @@ class Discover(commands.Cog):
                 image = message.attachments[0].url
                 suffix_list = ['jpg', 'jpeg', 'png', 'gif']
                 if image.casefold().endswith(tuple(suffix_list)):
-                    collection = db[str(message.channel.id)]
-                    post = {"url": image, "op": message.author.id}
+                    collection = db[str(message.guild.id)]
+                    post = {"channel": message.channel.id, "url": image, "op": message.author.id}
                     collection.insert_one(post)
                 else:
                     pass
@@ -46,16 +46,18 @@ class Discover(commands.Cog):
             num = 1
         elif num > 3:
             num = 3
-        collection = db[str(ctx.channel.id)]
-        images = collection.aggregate([{"$sample": {"size": num}}])
+        collection = db[str(ctx.guild.id)]
+        query = [{"$match": {"channel": ctx.channel.id}}, {"$sample": {"size": num}}]
+        images = collection.aggregate(query)
         for image in images:
             await ctx.send(image['url'])
 
     @commands.command(aliases=['Remove', 'Delete', 'delete', 'del', 'rm'])
     async def remove(self, ctx, url):
         """remove the URL of an image: !rm <url>"""
-        collection = db[str(ctx.channel.id)]
-        result = collection.delete_one({"url": url})
+        collection = db[str(ctx.guild.id)]
+        query = {"channel": ctx.channel.id, "url": url}
+        result = collection.delete_one(query)
         if result.deleted_count == 1:
             await ctx.send("Image removed")
         elif result.deleted_count == 0:
@@ -79,12 +81,18 @@ class Discover(commands.Cog):
     @commands.command()
     async def stats(self, ctx):
         """See how many images are in the database"""
-        collection_str = str(db[str(ctx.channel.id)].name)
-        dbstats = db.command('collstats', collection_str)
+        # Guild data
+        collection_str = str(db[str(ctx.guild.id)].name)
+        dbstats = db.command('collstats', collection_str, {"match": {"channel": ctx.channel.id}})
         data_size = dbstats['size'] / 1024
         count = dbstats['count']
-        storage_size = dbstats['storageSize'] / 1024
-        await ctx.send(f'Images: {count}\nData Size: {data_size} KB\nStorage Size: {storage_size} KB')
+
+        # Channel data
+        collection = db[str(ctx.guild.id)]
+        query = {"channel": ctx.channel.id}
+        channel_count = collection.count_documents(query)
+
+        await ctx.send(f'Channel Images: {channel_count}\nServer Images: {count}\nServer Data Size: {data_size} KB')
 
 
 def setup(client):
