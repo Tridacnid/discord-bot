@@ -31,12 +31,20 @@ class Discover(commands.Cog):
                 suffix_list = ['jpg', 'jpeg', 'png', 'gif']
                 if image.casefold().endswith(tuple(suffix_list)):
                     collection = db[str(message.guild.id)]
-                    post = {"channel": message.channel.id, "url": image, "op": message.author.id}
+                    post = {"channel": message.channel.id, "url": image, "op": message.author.id,
+                            "message_id": message.id}
                     collection.insert_one(post)
                 else:
                     pass
             except IndexError:
                 pass
+
+    # Remove the message from the database if a user deletes the message from the server
+    @commands.Cog.listener()
+    async def on_message_delete(self, message):
+        collection = db[str(message.guild.id)]
+        query = {"channel": message.channel.id, "message_id": message.id}
+        collection.delete_one(query)
 
     # Randomly posts an image that has been posted before
     @commands.command(aliases=['Discover', 'pick', 'd', 'p'])
