@@ -123,9 +123,9 @@ class Discover(commands.Cog):
         # Channel data
         collection = db[str(ctx.guild.id)]
         query = {"channel": ctx.channel.id}
-        channel_results = collection.find(query).explain()['executionStats']
+        channel_count = collection.count_documents(query)
 
-        await ctx.send(f'Channel Images: {channel_results["nReturned"]}\nServer Images: {count}\nServer Data Size: {data_size} KB')
+        await ctx.send(f'Channel Images: {channel_count}\nServer Images: {count}\nServer Data Size: {data_size} KB')
 
 
 def setup(client):
