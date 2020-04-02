@@ -14,6 +14,14 @@ cluster = MongoClient(load_json('db_address'))
 db = cluster['Discord']
 
 
+async def create_indices(collection):
+    collection.create_index([("channel", 1)])
+    collection.create_index([("channel", 1), ("message_id", -1)])
+    collection.create_index([("url", 1)])
+    collection.create_index([("channel", 1), ("url", -1)])
+    collection.create_index([("channel", 1), ("op", 1)])
+
+
 class Discover(commands.Cog):
 
     def __init__(self, client):
@@ -33,6 +41,7 @@ class Discover(commands.Cog):
                     collection = db[str(message.guild.id)]
                     post = {"channel": message.channel.id, "url": image, "op": message.author.id,
                             "message_id": message.id}
+                    await create_indices(collection)
                     collection.insert_one(post)
                 else:
                     pass
@@ -57,8 +66,11 @@ class Discover(commands.Cog):
         collection = db[str(ctx.guild.id)]
         query = [{"$match": {"channel": ctx.channel.id}}, {"$sample": {"size": num}}]
         images = collection.aggregate(query)
-        for image in images:
-            await ctx.send(image['url'])
+        if images.alive:
+            for image in images:
+                await ctx.send(image['url'])
+        else:
+            await ctx.send('No images to discover \U0001F622\nUpload some!')
 
     @commands.command(aliases=['Remove', 'Delete', 'delete', 'del', 'rm'])
     async def remove(self, ctx, url):
