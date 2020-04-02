@@ -81,10 +81,22 @@ class Discover(commands.Cog):
         try:
             user = self.client.get_user(op['op'])
             await ctx.send(f'That was originally posted by: {user.display_name}')
-        except:
+        except TypeError:
             await ctx.send('I\'m not sure who posted that.')
 
-    # todo get stats of single user
+    # Get stats of single user
+    @commands.command()
+    async def poster(self, ctx):
+        """Stats of a single user"""
+        name = ctx.message.mentions[0]
+
+        collection = db[str(ctx.guild.id)]
+        query = {"channel": ctx.channel.id, "op": name.id}
+        channel_count = collection.count_documents(query)
+        server_count = collection.count_documents({"op": name.id})
+
+        await ctx.send(f'{name.display_name} posted {channel_count} images in this channel.\n'
+                       f'{name.display_name} posted {server_count} images in this server.')
 
     @commands.command()
     async def stats(self, ctx):
