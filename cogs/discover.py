@@ -88,8 +88,9 @@ class Discover(commands.Cog):
     @commands.command()
     async def posted(self, ctx, url):
         """See who originally posted an image: !posted <url>"""
-        collection = db[str(ctx.channel.id)]
-        op = collection.find_one({"url": url})
+        collection = db[str(ctx.guild.id)]
+        query = {"channel": ctx.channel.id, "url": url}
+        op = collection.find_one(query)
         try:
             user = self.client.get_user(op['op'])
             await ctx.send(f'That was originally posted by: {user.display_name}')
@@ -122,9 +123,9 @@ class Discover(commands.Cog):
         # Channel data
         collection = db[str(ctx.guild.id)]
         query = {"channel": ctx.channel.id}
-        channel_count = collection.count_documents(query)
+        channel_results = collection.find(query).explain()['executionStats']
 
-        await ctx.send(f'Channel Images: {channel_count}\nServer Images: {count}\nServer Data Size: {data_size} KB')
+        await ctx.send(f'Channel Images: {channel_results["nReturned"]}\nServer Images: {count}\nServer Data Size: {data_size} KB')
 
 
 def setup(client):
