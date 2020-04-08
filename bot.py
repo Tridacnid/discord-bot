@@ -12,7 +12,7 @@ def load_json(token):
     return config.get(token)
 
 
-client = commands.Bot(command_prefix=load_json('prefix'))
+client = commands.Bot(command_prefix=load_json('prefix'), case_insensitive=True)
 for filename in os.listdir('./cogs'):
     if filename.endswith('.py'):
         client.load_extension(f'cogs.{filename[:-3]}')
@@ -24,7 +24,7 @@ async def on_ready():
     print('Bot is ready')
 
 
-@client.command(aliases=['Roll', 'dice', 'Dice', 'r', 'R'])
+@client.command(aliases=['dice', 'r'])
 async def roll(ctx, user_roll):
     """Roll some dice!"""
     user_roll = user_roll.split('d')
@@ -54,7 +54,7 @@ async def roll(ctx, user_roll):
     await ctx.send(f'{ctx.author.display_name} rolled: {rolls} for **{total}**')
 
 
-@client.command(name='8ball', aliases=['8Ball', '8-Ball', '8-ball'])
+@client.command(name='8ball', aliases=['8-Ball'])
 async def _8ball(ctx, *, question):
     """Ask the Magic 8-Ball a question!"""
     responses = load_json('8ball_responses')

@@ -56,7 +56,7 @@ class Discover(commands.Cog):
         collection.delete_one(query)
 
     # Randomly posts an image that has been posted before
-    @commands.command(aliases=['Discover', 'pick', 'd', 'p'])
+    @commands.command(aliases=['pick', 'd', 'p'])
     async def discover(self, ctx, num=1):
         """Discover up to 3 images"""
         if num < 1:
@@ -72,11 +72,23 @@ class Discover(commands.Cog):
         else:
             await ctx.send('No images to discover \U0001F622\nUpload some!')
 
-    @commands.command(aliases=['Remove', 'Delete', 'delete', 'del', 'rm'])
-    async def remove(self, ctx, url):
+    @commands.command(aliases=['delete', 'del', 'rm', 'cursed'])
+    async def remove(self, ctx, url=None):
         """remove the URL of an image: !rm <url>"""
         collection = db[str(ctx.guild.id)]
-        query = {"channel": ctx.channel.id, "url": url}
+
+        if url:
+            query = {"channel": ctx.channel.id, "url": url}
+        # Else remove the last message
+        else:
+            try:
+                messages = await ctx.history(limit=2).flatten()
+                msg_id = messages[1].id
+                query = {"channel": ctx.channel.id, "message_id": msg_id}
+            except IndexError:
+                await ctx.send("Failed to remove image")
+                return
+
         result = collection.delete_one(query)
         if result.deleted_count == 1:
             await ctx.send("Image removed")
