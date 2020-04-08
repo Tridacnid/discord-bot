@@ -97,6 +97,29 @@ class Discover(commands.Cog):
         else:
             await ctx.send("Something bad happened")
 
+    @commands.command(aliases=['isgone', 'indatabase', 'indb', 'isremove', 'isrm'])
+    async def isremoved(self, ctx, url=None):
+        collection = db[str(ctx.guild.id)]
+
+        if url:
+            query = {"channel": ctx.channel.id, "url": url}
+        # Check the last message
+        else:
+            try:
+                messages = await ctx.history(limit=2).flatten()
+                msg_id = messages[1].id
+                query = {"channel": ctx.channel.id, "message_id": msg_id}
+            except IndexError:
+                await ctx.send("I'm not sure")
+                return
+
+        if collection.count_documents(query, limit=1) == 0:
+            await ctx.send("Image is not in the database")
+        elif collection.count_documents(query, limit=1) != 0:
+            await ctx.send("Image is still in the database")
+        else:
+            await ctx.send("I'm not sure")
+
     @commands.command()
     async def posted(self, ctx, url):
         """See who originally posted an image: !posted <url>"""
