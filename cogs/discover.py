@@ -163,19 +163,26 @@ class Discover(commands.Cog):
         await ctx.send(f'Channel Images: {channel_count}\nServer Images: {count}\n'
                        f'Server Data Size: {round(data_size, 2)} KB')
 
-    @commands.command(pass_context=True)
+    @commands.command(aliases=['redo'])
     async def undo(self, ctx, msg_id=None):
         """undo the discover immediately above this command"""
         collection = db[str(ctx.guild.id)]
 
-        messages = await ctx.history(limit=2).flatten()
-        bot_msg = messages[1]  # message above !undo command
+        if msg_id:
+            try:
+                bot_msg = await ctx.fetch_message(msg_id)
+            except discord.NotFound:
+                await ctx.send('Message not found')
+                return
+        else:
+            messages = await ctx.history(limit=2).flatten()
+            bot_msg = messages[1]  # message above !undo command
+
         url = bot_msg.content
         query = {"channel": ctx.channel.id, "url": url}
 
-        if (bot_msg.author.id == load_json('bot_id')) and (collection.count_documents(query, limit=1) != 0):
-            await bot_msg.delete()
-            await ctx.send('Discover undid')
+        if (bot_msg.author.id == load_json('test_bot_id')) and (collection.count_documents(query, limit=1) != 0):
+            await bot_msg.edit(content='Discover undid')
         else:
             await ctx.send('Not deleted')
 
