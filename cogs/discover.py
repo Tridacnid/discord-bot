@@ -181,7 +181,7 @@ class Discover(commands.Cog):
         url = bot_msg.content
         query = {"channel": ctx.channel.id, "url": url}
 
-        if (bot_msg.author.id == load_json('test_bot_id')) and (collection.count_documents(query, limit=1) != 0):
+        if (bot_msg.author.id == load_json('bot_id')) and (collection.count_documents(query, limit=1) != 0):
             await bot_msg.edit(content='Discover undid')
         else:
             await ctx.send('Not deleted')
