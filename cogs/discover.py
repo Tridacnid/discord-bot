@@ -171,7 +171,7 @@ class Discover(commands.Cog):
         if msg_id:
             try:
                 bot_msg = await ctx.fetch_message(msg_id)
-            except discord.NotFound:
+            except (discord.NotFound, discord.HTTPException, discord.Forbidden) as e:
                 await ctx.send('Message not found')
                 return
         else:
