@@ -74,6 +74,8 @@ async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
         return await ctx.send('Please pass in all required arguments.')
     if isinstance(error, commands.CommandNotFound):
+        if ctx.invoked_with.startswith('!'):
+            return
         return await ctx.send('Invalid Command')
     if isinstance(error, commands.BadArgument):
         if ctx.command.qualified_name == 'discover':
