@@ -32,7 +32,7 @@ class Stocks(commands.Cog):
             for ticker in matches:
                 try:
                     quote = c.quote(ticker)
-                    money = '${:,.2f}'.format(float(quote['close']))
+                    money = '${:,.2f}'.format(float(quote['latestPrice']))
                     await message.channel.send(f'{ticker.upper()}: {money}')
                 except p.common.PyEXception:
                     await message.channel.send(f'Unknown symbol: {ticker}')
