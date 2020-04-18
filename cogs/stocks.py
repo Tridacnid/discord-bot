@@ -29,7 +29,7 @@ class Stocks(commands.Cog):
             matches = re.findall(pattern_quote, message.content)
             c = p.Client(api_token=load_json('IEX_pub'), version='v1', api_limit=5)
 
-            for ticker in matches:
+            for ticker in set(matches):
                 try:
                     quote_embed = get_basic_quote(ticker)
                     await message.channel.send(embed=quote_embed)

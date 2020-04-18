@@ -99,6 +99,7 @@ class Discover(commands.Cog):
 
     @commands.command(aliases=['isgone', 'indatabase', 'indb', 'isremove', 'isrm'])
     async def isremoved(self, ctx, url=None):
+        """Check if the image is removed from the database"""
         collection = db[str(ctx.guild.id)]
 
         if url:
