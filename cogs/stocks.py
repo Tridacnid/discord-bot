@@ -41,9 +41,11 @@ def setup(client):
 
 
 def get_basic_quote(ticker: str) -> discord.Embed:
+    print('1')
     c = p.Client(api_token=load_json('IEX_pub'), version='v1')
+    print('2')
     quote = c.quote(ticker)
-
+    print('3')
     symbol = quote['symbol']
     company_name = quote['companyName']
     change_percent = round(quote['changePercent'] * 100, 3)
@@ -54,6 +56,7 @@ def get_basic_quote(ticker: str) -> discord.Embed:
     prev = quote['previousClose']
     q_time = quote['latestTime']
 
+    print(quote)
     if change_percent >= 0:
         market_percent_string = "+" + str(change_percent) + "%"
     else:
@@ -65,8 +68,11 @@ def get_basic_quote(ticker: str) -> discord.Embed:
         change_string = str(change)
 
     desc1 = ''.join([str('${:,.2f}'.format(float(latest_price))), " ", change_string, " (", market_percent_string, ")"])
-    desc2 = ''.join(['High: ', '{:,.2f}'.format(float(high)), ' Low: ', '{:,.2f}'.format(float(low)), ' Prev: ',
-                     '{:,.2f}'.format(float(prev))])
+    if high is not None and low is not None:
+        desc2 = ''.join(['High: ', '{:,.2f}'.format(float(high)), ' Low: ', '{:,.2f}'.format(float(low)), ' Prev: ',
+                         '{:,.2f}'.format(float(prev))])
+    else:
+        desc2 = ''.join(['Prev: ', '{:,.2f}'.format(float(prev))])
     embed = discord.Embed(
         title="".join([company_name, " ($", symbol, ")"]),
         url="https://www.tradingview.com/symbols/" + symbol,
