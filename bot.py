@@ -104,7 +104,7 @@ async def on_reaction_remove(reaction, user):
 
         # Remove a reaction given by the reactor
         if collection.count_documents({"user": user.id}, limit=1) != 0:
-            collection.update_one({"user": reaction.message.author.id}, {"$inc": {"reaction_given": -1}})
+            collection.update_one({"user": user.id}, {"$inc": {"reaction_given": -1}})
 
 
 @client.command(hidden=True)
