@@ -107,32 +107,39 @@ async def on_reaction_remove(reaction, user):
             collection.update_one({"user": user.id}, {"$inc": {"reaction_given": -1}})
 
 
-@client.command(hidden=True)
+@client.command()
 async def reactions(ctx):
     """Shows the total number of reactions each user has received on their messages"""
     collection = react_db[str(ctx.guild.id)]
     all_users = collection.find({}).sort('reaction_received', -1)
 
-    results = '**Total reactions received:**\n'
+    received = ''
+    index = 1
     for doc in all_users:
         try:
             user = client.get_user(doc['user'])
-            s = f'{user.display_name} = {doc["reaction_received"]}\n'
-            results += s
+            s = f'**{index})** {user.display_name}: {doc["reaction_received"]}\n'
+            received += s
         except KeyError:
             continue
+        index += 1
+    index = 1
 
-    results += '\n**Total reactions given:**\n'
+    given = ''
     all_users2 = collection.find({}).sort('reaction_given', -1)
     for doc in all_users2:
         try:
             user = client.get_user(doc['user'])
-            s = f'{user.display_name} = {doc["reaction_given"]}\n'
-            results += s
+            s = f'**{index})** {user.display_name}: {doc["reaction_given"]}\n'
+            given += s
         except KeyError:
             continue
+        index += 1
 
-    await ctx.send(results)
+    embed = discord.Embed(color=0x00ff00).add_field(name='**Total reactions received:**', value=received, inline=True) \
+        .add_field(name='**Total reactions given:**', value=given, inline=True)
+
+    await ctx.send(embed=embed)
 
 
 status = cycle(load_json('statuses'))
