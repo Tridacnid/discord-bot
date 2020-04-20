@@ -27,7 +27,6 @@ class Stocks(commands.Cog):
     async def on_message(self, message):
         if message.author.id != self.client.user.id:
             matches = re.findall(pattern_quote, message.content)
-            c = p.Client(api_token=load_json('IEX_pub'), version='v1', api_limit=5)
 
             for ticker in set(matches):
                 try:

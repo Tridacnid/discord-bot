@@ -4,6 +4,7 @@ import json
 import os
 from discord.ext import commands, tasks
 from itertools import cycle
+from pymongo import MongoClient
 
 
 def load_json(token):
@@ -11,6 +12,17 @@ def load_json(token):
         config = json.load(f)
     return config.get(token)
 
+
+async def create_indices(collection):
+    collection.create_index([("user", 1)])
+    collection.create_index([("reaction_received", -1)])
+    collection.create_index([("reaction_given", -1)])
+    collection.create_index([("user", 1), ("reaction_received", -1)])
+    collection.create_index([("user", 1), ("reaction_given", -1)])
+
+
+cluster = MongoClient(load_json('db_address'))
+react_db = cluster['Reactions']
 
 client = commands.Bot(command_prefix=load_json('prefix'), case_insensitive=True)
 for filename in os.listdir('./cogs'):
@@ -59,6 +71,68 @@ async def _8ball(ctx, *, question):
     """Ask the Magic 8-Ball a question!"""
     responses = load_json('8ball_responses')
     await ctx.send(f' {ctx.author.display_name}\'s question: {question}\nAnswer: {random.choice(responses)}')
+
+
+@client.event
+async def on_reaction_add(reaction, user):
+    # Skip if this is their own message or a bot message
+    if user != reaction.message.author and client.user != reaction.message.author:
+        collection = react_db[str(user.guild.id)]
+        await create_indices(collection)
+
+        # Update the number of reactions received by the message author
+        if collection.count_documents({"user": reaction.message.author.id}, limit=1) == 0:
+            collection.insert_one({"user": reaction.message.author.id, "reaction_received": 1})
+        elif collection.count_documents({"user": reaction.message.author.id}, limit=1) > 0:
+            collection.update_one({"user": reaction.message.author.id}, {"$inc": {"reaction_received": 1}})
+
+        # Update the number of reactions given out by the reactor
+        if collection.count_documents({"user": user.id}, limit=1) == 0:
+            collection.insert_one({"user": user.id, "reaction_given": 1})
+        elif collection.count_documents({"user": user.id}, limit=1) > 0:
+            collection.update_one({"user": user.id}, {"$inc": {"reaction_given": 1}})
+
+
+@client.event
+async def on_reaction_remove(reaction, user):
+    if user != reaction.message.author and client.user != reaction.message.author:
+        collection = react_db[str(user.guild.id)]
+
+        # Remove a reaction received by the message author
+        if collection.count_documents({"user": reaction.message.author.id}, limit=1) != 0:
+            collection.update_one({"user": reaction.message.author.id}, {"$inc": {"reaction_received": -1}})
+
+        # Remove a reaction given by the reactor
+        if collection.count_documents({"user": user.id}, limit=1) != 0:
+            collection.update_one({"user": reaction.message.author.id}, {"$inc": {"reaction_given": -1}})
+
+
+@client.command(hidden=True)
+async def reactions(ctx):
+    """Shows the total number of reactions each user has received on their messages"""
+    collection = react_db[str(ctx.guild.id)]
+    all_users = collection.find({}).sort('reaction_received', -1)
+
+    results = '**Total reactions received:**\n'
+    for doc in all_users:
+        try:
+            user = client.get_user(doc['user'])
+            s = f'{user.display_name} = {doc["reaction_received"]}\n'
+            results += s
+        except KeyError:
+            continue
+
+    results += '\n**Total reactions given:**\n'
+    all_users2 = collection.find({}).sort('reaction_given', -1)
+    for doc in all_users2:
+        try:
+            user = client.get_user(doc['user'])
+            s = f'{user.display_name} = {doc["reaction_given"]}\n'
+            results += s
+        except KeyError:
+            continue
+
+    await ctx.send(results)
 
 
 status = cycle(load_json('statuses'))
