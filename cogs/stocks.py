@@ -41,11 +41,8 @@ def setup(client):
 
 
 def get_basic_quote(ticker: str) -> discord.Embed:
-    print('1')
     c = p.Client(api_token=load_json('IEX_pub'), version='v1')
-    print('2')
     quote = c.quote(ticker)
-    print('3')
     symbol = quote['symbol']
     company_name = quote['companyName']
     change_percent = round(quote['changePercent'] * 100, 3)
@@ -56,7 +53,6 @@ def get_basic_quote(ticker: str) -> discord.Embed:
     prev = quote['previousClose']
     q_time = quote['latestTime']
 
-    print(quote)
     if change_percent >= 0:
         market_percent_string = "+" + str(change_percent) + "%"
     else:
