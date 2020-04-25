@@ -81,7 +81,13 @@ async def all_us_cases(ctx):
 
 async def single_state_cases(ctx, state: str) -> bool:
     # Get the closest spelling
-    maybe = process.extract(state, spellings, limit=1)[0][0]
+    extract_spelling = process.extract(state, spellings, limit=1)
+    if extract_spelling[0][1] > 60:
+        closest_word = extract_spelling[0][0].lower()
+    else:
+        closest_word = state
+    print(extract_spelling)
+
     got_it = False
     try:
         state = us.states.lookup(state).name
@@ -90,11 +96,10 @@ async def single_state_cases(ctx, state: str) -> bool:
         pass
 
     if state is None:
-        # await ctx.send('Please enter a valid state')
         return False
 
     if not got_it:
-        state = maybe
+        state = closest_word
     state = state.title()
     try:
         await make_covid_embed('US', state, ctx, state)
@@ -105,11 +110,17 @@ async def single_state_cases(ctx, state: str) -> bool:
 
 async def single_country_cases(ctx, country: str) -> bool:
     # Get the closest spelling
-    maybe = process.extract(country, spellings, limit=1)[0][0].lower()
-    if country.lower() in usa or maybe in usa:
+    extract_spelling = process.extract(country, spellings, limit=1)
+    if extract_spelling[0][1] > 60:
+        closest_word = extract_spelling[0][0].lower()
+    else:
+        closest_word = country
+    print(extract_spelling[0])
+
+    if country.lower() in usa or closest_word in usa:
         country = 'US'
     else:
-        country = maybe
+        country = closest_word
         country = country.title()
 
     try:
