@@ -22,51 +22,21 @@ class Covid(commands.Cog):
         print('COVID cog ready')
 
     @commands.command(aliases=['covid19', 'covid-19', 'coronavirus', 'corona', 'rona', 'c19'])
-    async def covid(self, ctx, state=None):
+    async def covid(self, ctx, *, state=None):
         update_covid_json()
 
         # Get all of US stats
         if state is None:
-            us_json = load_json('US')
-            keys = sorted(us_json.keys())  # Sort the JSON elements by name
+            await all_us_cases(ctx)
+            return
 
-            embed = discord.Embed()
-            index = 0
-            for i in keys:
-                if i == 'All' or i == 'Recovered':
-                    continue
+        sent = await single_state_cases(ctx, state)
 
-                curr = us_json[i]  # Current state
-                value = f"Confirmed: {curr.get('confirmed')}\nDeaths: {curr.get('deaths')}"
+        if not sent:
+            sent = await single_country_cases(ctx, state)
 
-                embed.add_field(name=i, value=value)
-                index += 1
-                # Create a new Embed every 12 states
-                if i == keys[len(keys) - 1] or index % 12 == 0:
-                    index = 0
-                    await ctx.send(embed=embed)
-                    embed = discord.Embed()
-
-        else:
-            try:
-                state = us.states.lookup(state).name
-            except AttributeError:
-                await ctx.send('Please enter a valid state')
-                return
-
-            if state is None:
-                await ctx.send('Please enter a valid state')
-                return
-
-            js = load_json('US').get(state)
-            embed = discord.Embed(
-                title=state
-            )
-            embed.add_field(name='Confirmed', value=js.get('confirmed'))
-            embed.add_field(name='Deaths', value=js.get('deaths'))
-            embed.set_footer(text=js.get('updated'))
-
-            await ctx.send(embed=embed)
+        if not sent:
+            await ctx.send('Unknown Location')
 
 
 def setup(client):
@@ -84,3 +54,67 @@ def update_covid_json():
 
     with open('covid.json', 'w', encoding='utf-8') as json_file:
         json.dump(json_response, json_file, ensure_ascii=False, indent=4)
+
+
+async def all_us_cases(ctx):
+    us_json = load_json('US')
+    keys = sorted(us_json.keys())  # Sort the JSON elements by name
+    embed = discord.Embed()
+    index = 0
+    for i in keys:
+        if i == 'All' or i == 'Recovered':
+            continue
+
+        curr = us_json[i]  # Current state
+        value = f"Confirmed: {curr.get('confirmed')}\nDeaths: {curr.get('deaths')}"
+
+        embed.add_field(name=i, value=value)
+        index += 1
+        # Create a new Embed every 12 states
+        if i == keys[len(keys) - 1] or index % 12 == 0:
+            index = 0
+            await ctx.send(embed=embed)
+            embed = discord.Embed()
+
+
+async def single_state_cases(ctx, state: str) -> bool:
+    try:
+        state = us.states.lookup(state).name
+    except AttributeError:
+        pass
+
+    if state is None:
+        # await ctx.send('Please enter a valid state')
+        return False
+
+    state = state.title()
+    try:
+        await make_covid_embed('US', state, ctx, state)
+        return True
+    except AttributeError:
+        return False
+
+
+async def single_country_cases(ctx, country: str) -> bool:
+    if country.upper() == 'US':
+        country = country.upper()
+    else:
+        country = country.title()
+
+    try:
+        await make_covid_embed(country, 'All', ctx, country)
+        return True
+    except AttributeError:
+        return False
+
+
+async def make_covid_embed(country, get, ctx, title):
+    js = load_json(country).get(get)
+    embed = discord.Embed(
+        title=title
+    )
+    embed.add_field(name='Confirmed', value=js.get('confirmed'))
+    embed.add_field(name='Deaths', value=js.get('deaths'))
+    if js.get('updated') is not None:
+        embed.set_footer(text=js.get('updated'))
+    await ctx.send(embed=embed)
