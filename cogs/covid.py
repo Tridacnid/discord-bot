@@ -3,6 +3,7 @@ import json
 import requests
 import requests_cache
 import us
+from fuzzywuzzy import process
 from discord.ext import commands
 
 
@@ -78,8 +79,12 @@ async def all_us_cases(ctx):
 
 
 async def single_state_cases(ctx, state: str) -> bool:
+    # Get the closest spelling
+    maybe = process.extract(state, spellings, limit=1)[0][0]
+    got_it = False
     try:
         state = us.states.lookup(state).name
+        got_it = True
     except AttributeError:
         pass
 
@@ -87,6 +92,8 @@ async def single_state_cases(ctx, state: str) -> bool:
         # await ctx.send('Please enter a valid state')
         return False
 
+    if not got_it:
+        state = maybe
     state = state.title()
     try:
         await make_covid_embed('US', state, ctx, state)
@@ -95,10 +102,23 @@ async def single_state_cases(ctx, state: str) -> bool:
         return False
 
 
+usa = ['usa', 'us', 'america', 'united states', 'united states of america', 'merica', '\'merica']
+
+with open('./covid.json') as f:
+    j = json.load(f)
+spellings = list(j.keys())
+spellings.extend(list(j.get('US').keys()))
+spellings.extend(usa)
+spellings = list(map(lambda x: x.lower(), spellings))
+
+
 async def single_country_cases(ctx, country: str) -> bool:
-    if country.upper() == 'US':
-        country = country.upper()
+    # Get the closest spelling
+    maybe = process.extract(country, spellings, limit=1)[0][0].lower()
+    if country.lower() in usa or maybe in usa:
+        country = 'US'
     else:
+        country = maybe
         country = country.title()
 
     try:
