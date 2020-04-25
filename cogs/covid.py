@@ -20,6 +20,7 @@ class Covid(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        make_spellings()
         print('COVID cog ready')
 
     @commands.command(aliases=['covid19', 'covid-19', 'coronavirus', 'corona', 'rona', 'c19'])
@@ -102,16 +103,6 @@ async def single_state_cases(ctx, state: str) -> bool:
         return False
 
 
-usa = ['usa', 'us', 'america', 'united states', 'united states of america', 'merica', '\'merica']
-
-with open('./covid.json') as f:
-    j = json.load(f)
-spellings = list(j.keys())
-spellings.extend(list(j.get('US').keys()))
-spellings.extend(usa)
-spellings = list(map(lambda x: x.lower(), spellings))
-
-
 async def single_country_cases(ctx, country: str) -> bool:
     # Get the closest spelling
     maybe = process.extract(country, spellings, limit=1)[0][0].lower()
@@ -138,3 +129,17 @@ async def make_covid_embed(country, get, ctx, title):
     if js.get('updated') is not None:
         embed.set_footer(text=js.get('updated'))
     await ctx.send(embed=embed)
+
+
+def make_spellings():
+    global usa, spellings
+    usa = ['usa', 'us', 'america', 'united states', 'united states of america', 'merica', '\'merica']
+    with open('./covid.json') as f:
+        j = json.load(f)
+    spellings = list(j.keys())
+    spellings.extend(list(j.get('US').keys()))
+    spellings.extend(usa)
+    spellings = list(map(lambda x: x.lower(), spellings))
+
+
+update_covid_json()
