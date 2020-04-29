@@ -59,6 +59,7 @@ class Discover(commands.Cog):
     @commands.command(aliases=['pick', 'd', 'p'])
     async def discover(self, ctx, num=1):
         """Discover up to 3 images"""
+        await ctx.message.delete()
         if num < 1:
             num = 1
         elif num > 3:
@@ -68,7 +69,7 @@ class Discover(commands.Cog):
         images = collection.aggregate(query)
         if images.alive:
             for image in images:
-                await ctx.send(image['url'])
+                await ctx.send(f"{ctx.message.author.display_name} discovered {image['url']}")
         else:
             await ctx.send('No images to discover \U0001F622\nUpload some!')
 
