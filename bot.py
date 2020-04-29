@@ -142,10 +142,16 @@ async def reactions(ctx):
     await ctx.send(embed=embed)
 
 
+@client.command(hidden=True)
+async def ban(ctx, name):
+    await ctx.send(f'Shut up, {name.title()}')
+
+
 @client.command(aliases=['em', 'me'])
 async def emote(ctx, *, text):
     user = ctx.author.display_name
     await ctx.send(f'_{user} {text}_')
+
 
 status = cycle(load_json('statuses'))
 
