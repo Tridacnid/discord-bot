@@ -93,9 +93,7 @@ class Discover(commands.Cog):
                         shutil.copyfileobj(r.raw, f)
 
                     files.append(local_file)
-        print(files)
 
-        print(len(image_urls))
         if len(image_urls) < 3:
             await ctx.send(f"Upload more images. There are {len(image_urls)} in this channel.")
             return
@@ -104,7 +102,6 @@ class Discover(commands.Cog):
         new_image = append_images(image_list)
         combo_image_name = f'./cogs/images/{str(uuid.uuid4())[:8]}.jpg'
         new_image.save(f'{combo_image_name}')
-        print(files)
 
         embed.set_image(url=f'attachment://{combo_image_name}')
         sent = await ctx.send(file=discord.File(combo_image_name))
@@ -308,7 +305,6 @@ def append_images(images, direction='horizontal', bg_color=(255, 255, 255), alig
         Concatenated image as a new PIL image object.
     """
     images1 = copy.deepcopy(images)
-    # print(len(list(images1)))
     widths, heights = zip(*(i.size for i in images))
 
     if direction == 'horizontal':
@@ -321,7 +317,6 @@ def append_images(images, direction='horizontal', bg_color=(255, 255, 255), alig
     new_im = Image.new('RGB', (new_width, new_height), color=bg_color)
 
     offset = 0
-    # print(len(list(images1)))
     for im in images1:
         if direction == 'horizontal':
             y = 0
