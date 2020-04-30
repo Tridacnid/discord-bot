@@ -1,7 +1,13 @@
+import os
 import discord
 import json
 from discord.ext import commands
 from pymongo import MongoClient
+from PIL import Image
+import copy
+import shutil
+import requests
+import uuid
 
 
 def load_json(token):
@@ -33,7 +39,7 @@ class Discover(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.id != load_json('bot_id'):
+        if message.author.id != load_json('bot_id') and not message.author.bot:
             try:
                 image = message.attachments[0].url
                 suffix_list = ['jpg', 'jpeg', 'png', 'gif']
@@ -55,22 +61,68 @@ class Discover(commands.Cog):
         query = {"channel": message.channel.id, "message_id": message.id}
         collection.delete_one(query)
 
+
+
+
     # Randomly posts an image that has been posted before
     @commands.command(aliases=['pick', 'd', 'p'])
     async def discover(self, ctx, num=1):
         """Discover up to 3 images"""
-        if num < 1:
-            num = 1
-        elif num > 3:
-            num = 3
         collection = db[str(ctx.guild.id)]
         query = [{"$match": {"channel": ctx.channel.id}}, {"$sample": {"size": num}}]
         images = collection.aggregate(query)
+
+
+        embed = discord.Embed()
+        files = []
+
         if images.alive:
             for image in images:
-                await ctx.send(image['url'])
-        else:
-            await ctx.send('No images to discover \U0001F622\nUpload some!')
+                image_url = image['url']
+                filename, file_extension = os.path.splitext(image_url)
+
+                directory = './cogs/images/'
+                local_file = f'{directory}{str(uuid.uuid4())[:8]}{file_extension}'
+
+                # Download the file locally
+                r = requests.get(image_url, stream=True)
+                if r.status_code == 200:
+                    if not os.path.exists(directory):
+                        os.makedirs(directory)
+                    with open(local_file, 'wb') as f:
+                        r.raw.decode_content = True
+                        shutil.copyfileobj(r.raw, f)
+
+                    files.append(local_file)
+        print(files)
+        image_list = map(Image.open, files)
+        new_image = append_images(image_list)
+        new_image.save('combo.jpg')
+        print(files)
+        embed.set_image(url=f'attachment://combo.jpg')
+        await ctx.send(file=discord.File('combo.jpg'))
+
+        for file in files:
+            if os.path.isfile(file):
+                os.remove(file)
+        # await ctx.send(embed=embed)
+
+
+        # if num < 1:
+        #     num = 1
+        # elif num > 3:
+        #     num = 3
+        # collection = db[str(ctx.guild.id)]
+        # query = [{"$match": {"channel": ctx.channel.id}}, {"$sample": {"size": num}}]
+        # images = collection.aggregate(query)
+        # if images.alive:
+        #     for image in images:
+        #         await ctx.send(image['url'])
+        # else:
+        #     await ctx.send('No images to discover \U0001F622\nUpload some!')
+
+    # def choose_file:
+
 
     @commands.command(aliases=['delete', 'del', 'rm', 'cursed'])
     async def remove(self, ctx, url=None):
@@ -186,6 +238,56 @@ class Discover(commands.Cog):
             await bot_msg.edit(content='Discover undid')
         else:
             await ctx.send('Not deleted')
+
+
+def append_images(images, direction='horizontal', bg_color=(255,255,255), alignment='center'):
+    """
+    Appends images in horizontal/vertical direction.
+
+    Args:
+        images: List of PIL images
+        direction: direction of concatenation, 'horizontal' or 'vertical'
+        bg_color: Background color (default: white)
+        alignment: alignment mode if images need padding;
+           'left', 'right', 'top', 'bottom', or 'center'
+
+    Returns:
+        Concatenated image as a new PIL image object.
+    """
+    images1 = copy.deepcopy(images)
+    # print(len(list(images1)))
+    widths, heights = zip(*(i.size for i in images))
+
+    if direction == 'horizontal':
+        new_width = sum(widths)
+        new_height = max(heights)
+    else:
+        new_width = max(widths)
+        new_height = sum(heights)
+
+    new_im = Image.new('RGB', (new_width, new_height), color=bg_color)
+
+    offset = 0
+    # print(len(list(images1)))
+    for im in images1:
+        if direction == 'horizontal':
+            y = 0
+            if alignment == 'center':
+                y = int((new_height - im.size[1])/2)
+            elif alignment == 'bottom':
+                y = new_height - im.size[1]
+            new_im.paste(im, (offset, y))
+            offset += im.size[0]
+        else:
+            x = 0
+            if alignment == 'center':
+                x = int((new_width - im.size[0])/2)
+            elif alignment == 'right':
+                x = new_width - im.size[0]
+            new_im.paste(im, (x, offset))
+            offset += im.size[1]
+
+    return new_im
 
 
 def setup(client):
