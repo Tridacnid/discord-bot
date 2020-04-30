@@ -73,6 +73,24 @@ async def _8ball(ctx, *, question):
     await ctx.send(f' {ctx.author.display_name}\'s question: {question}\nAnswer: {random.choice(responses)}')
 
 
+async def count_emoji(reaction, user):
+    collection = react_db[str(user.guild.id)]
+
+    if reaction.custom_emoji:
+        emoji = str(reaction)
+    else:
+        emoji = str(reaction).encode('unicode-escape').decode('ASCII')
+    guild = reaction.message.guild.id
+    channel = reaction.message.channel.id
+    reactee = reaction.message.author.id  # Received the reaction
+    reactor = user.id  # Gave the reaction
+
+    collection.update_one({"reaction": emoji, "guild": guild, "channel": channel},
+                          {"$inc": {f"received.{reactee}": 1, "received.total": 1, f"given.{reactor}": 1,
+                                    "given.total": 1, "grand_total": 1}},
+                          upsert=True)
+
+
 @client.event
 async def on_reaction_add(reaction, user):
     # Skip if this is their own message or a bot message
@@ -140,6 +158,29 @@ async def reactions(ctx):
         .add_field(name='**Total reactions given:**', value=given, inline=True)
 
     await ctx.send(embed=embed)
+
+
+@client.command()
+async def given(ctx):
+    collection = react_db[str(ctx.guild.id)]
+    given_react = collection.find({}).sort('given.total', -1)
+    received_react = collection.find({}).sort('received.total', -1)
+
+    for doc in given_react:
+        try:
+            s = doc['reaction']
+            embed = discord.Embed(
+                title=f"{s.encode('ASCII').decode('unicode-escape')} : {doc['grand_total']}")
+            for key in doc['given']:
+                print(key)
+                user = key
+                if key != 'total':
+                    user = client.get_user(int(key)).display_name
+                print(user)
+                embed.add_field(name=f'{user} given:', value=doc['given'].get(key), inline=False)
+            await ctx.send(embed=embed)
+        except KeyError:
+            continue
 
 
 @client.command(hidden=True)
