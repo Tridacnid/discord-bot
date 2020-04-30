@@ -18,6 +18,7 @@ def load_json(token):
 
 cluster = MongoClient(load_json('db_address'))
 db = cluster['Discord']
+discover_images = cluster['Discover_Images']
 
 
 async def create_indices(collection):
@@ -61,24 +62,22 @@ class Discover(commands.Cog):
         query = {"channel": message.channel.id, "message_id": message.id}
         collection.delete_one(query)
 
-
-
-
     # Randomly posts an image that has been posted before
     @commands.command(aliases=['pick', 'd', 'p'])
-    async def discover(self, ctx, num=1):
+    async def discover(self, ctx, num=3):
         """Discover up to 3 images"""
         collection = db[str(ctx.guild.id)]
         query = [{"$match": {"channel": ctx.channel.id}}, {"$sample": {"size": num}}]
         images = collection.aggregate(query)
 
-
         embed = discord.Embed()
         files = []
 
+        image_urls = []
         if images.alive:
             for image in images:
                 image_url = image['url']
+                image_urls.append(image_url)
                 filename, file_extension = os.path.splitext(image_url)
 
                 directory = './cogs/images/'
@@ -95,18 +94,46 @@ class Discover(commands.Cog):
 
                     files.append(local_file)
         print(files)
+
+        print(len(image_urls))
+        if len(image_urls) < 3:
+            await ctx.send(f"Upload more images. There are {len(image_urls)} in this channel.")
+            return
+
         image_list = map(Image.open, files)
         new_image = append_images(image_list)
-        new_image.save('combo.jpg')
+        combo_image_name = f'./cogs/images/{str(uuid.uuid4())[:8]}.jpg'
+        new_image.save(f'{combo_image_name}')
         print(files)
-        embed.set_image(url=f'attachment://combo.jpg')
-        await ctx.send(file=discord.File('combo.jpg'))
+
+        embed.set_image(url=f'attachment://{combo_image_name}')
+        sent = await ctx.send(file=discord.File(combo_image_name))
+        await ctx.message.delete()
+
+        collection_disc = discover_images[str(ctx.guild.id)]
+        disc_query = {"message_id": sent.id, "message_author": ctx.author.id, "channel_id": ctx.channel.id}
+        collection_disc.insert_one(disc_query)
+
+        await sent.add_reaction('1️⃣')
+        await sent.add_reaction('2️⃣')
+        await sent.add_reaction('3️⃣')
+        await sent.add_reaction('\U0001F1FD')
+
+        index = 1
+        for image in image_urls:
+            collection_disc.update_one(disc_query, {'$set': {f'image{index}': image}})
+            index += 1
 
         for file in files:
             if os.path.isfile(file):
                 os.remove(file)
-        # await ctx.send(embed=embed)
+        if os.path.isfile(combo_image_name):
+            os.remove(combo_image_name)
 
+        # Get the original caller's emoji choice
+        # On reaction and
+
+        # await ctx.send(embed=embed)
 
         # if num < 1:
         #     num = 1
@@ -123,6 +150,32 @@ class Discover(commands.Cog):
 
     # def choose_file:
 
+    # check the emoji chosen
+    @commands.Cog.listener()
+    async def on_reaction_add(self, reaction, user):
+        if not user.bot:
+            collection_disc = discover_images[str(user.guild.id)]
+            document = collection_disc.find_one(
+                {"message_id": reaction.message.id, "channel_id": reaction.message.channel.id})
+            og_user = document.get('message_author')
+
+            # If the user who called the discover == the user who reacted
+            if og_user == user.id:
+                if str(reaction) == '1️⃣':
+                    image = document.get('image1')
+                if str(reaction) == '2️⃣':
+                    image = document.get('image2')
+                if str(reaction) == '3️⃣':
+                    image = document.get('image3')
+                if str(reaction) == '🇽':  # I probably don't need this
+                    await reaction.message.delete()
+                    return
+
+                await reaction.message.channel.send(image)
+                collection_disc.delete_one({"message_id": reaction.message.id})
+
+                # Remove original message
+                await reaction.message.delete()
 
     @commands.command(aliases=['delete', 'del', 'rm', 'cursed'])
     async def remove(self, ctx, url=None):
@@ -240,7 +293,7 @@ class Discover(commands.Cog):
             await ctx.send('Not deleted')
 
 
-def append_images(images, direction='horizontal', bg_color=(255,255,255), alignment='center'):
+def append_images(images, direction='horizontal', bg_color=(255, 255, 255), alignment='center'):
     """
     Appends images in horizontal/vertical direction.
 
@@ -273,7 +326,7 @@ def append_images(images, direction='horizontal', bg_color=(255,255,255), alignm
         if direction == 'horizontal':
             y = 0
             if alignment == 'center':
-                y = int((new_height - im.size[1])/2)
+                y = int((new_height - im.size[1]) / 2)
             elif alignment == 'bottom':
                 y = new_height - im.size[1]
             new_im.paste(im, (offset, y))
@@ -281,7 +334,7 @@ def append_images(images, direction='horizontal', bg_color=(255,255,255), alignm
         else:
             x = 0
             if alignment == 'center':
-                x = int((new_width - im.size[0])/2)
+                x = int((new_width - im.size[0]) / 2)
             elif alignment == 'right':
                 x = new_width - im.size[0]
             new_im.paste(im, (x, offset))
