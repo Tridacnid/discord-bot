@@ -168,6 +168,10 @@ async def on_message(message):
                 facebook_links += f'https://{match} '
 
             await message.channel.send(facebook_links.strip())
+        else:
+            await client.process_commands(message)
+    else:
+        await client.process_commands(message)
 
 
 status = cycle(load_json('statuses'))
