@@ -5,6 +5,7 @@ import os
 from discord.ext import commands, tasks
 from itertools import cycle
 from pymongo import MongoClient
+import re
 
 
 def load_json(token):
@@ -151,6 +152,20 @@ async def ban(ctx, name):
 async def emote(ctx, *, text):
     user = ctx.author.display_name
     await ctx.send(f'_{user} {text}_')
+
+
+@client.event
+async def on_message(message):
+    """remove mobile facebook links"""
+    if not message.author.bot:
+        pattern = re.compile(r'(?<=https://m\.facebook)([^\s]+)')
+        matches = re.findall(pattern, message.content)
+        if len(matches) > 0:
+            facebook_links = ""
+            for match in matches:
+                facebook_links += f'https://facebook{match} '
+
+            await message.channel.send(facebook_links.strip())
 
 
 status = cycle(load_json('statuses'))
