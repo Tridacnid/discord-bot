@@ -158,14 +158,14 @@ async def emote(ctx, *, text):
 
 @client.event
 async def on_message(message):
-    """remove mobile facebook links"""
+    """remove mobile links"""
     if not message.author.bot:
-        pattern = re.compile(r'(?<=https://m\.facebook)([^\s]+)')
+        pattern = re.compile(r'(?<=https://m\.)([^\s]+)')
         matches = re.findall(pattern, message.content)
         if len(matches) > 0:
             facebook_links = ""
             for match in matches:
-                facebook_links += f'https://facebook{match} '
+                facebook_links += f'https://{match} '
 
             await message.channel.send(facebook_links.strip())
 
