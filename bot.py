@@ -150,8 +150,10 @@ async def ban(ctx, name):
 
 @client.command(aliases=['em', 'me'])
 async def emote(ctx, *, text):
-    user = ctx.author.display_name
-    await ctx.send(f'_{user} {text}_')
+    await ctx.message.delete()
+    user_name = ctx.author.display_name
+    message = f'_{user_name} {text}_'
+    await ctx.send(message)
 
 
 @client.event
